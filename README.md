@@ -1,10 +1,13 @@
 # Nyan Cat 🌈🐱
 
-A complete, looping Nyan Cat animation starring **my own cat** — flying through
-a scrolling starfield, trailing a waving rainbow, riding a frosted pop-tart,
-all in time to an original 8-bit chiptune.
+A complete, looping recreation of the classic **Nyan Cat** animation — frosted
+pop-tart body, galloping legs, a waving striped tail, the stepped rainbow that
+wags between two frames, a twinkling scrolling starfield, and deep-blue space —
+but the cat is redrawn as **my own brown tabby** (green eyes, "M" forehead
+markings, pink nose, cream muzzle) instead of the gray original.
 
-Pure HTML/CSS/JS on a single `<canvas>`. No build step, no dependencies.
+Everything is hand-drawn pixel art on a single `<canvas>`. Pure HTML/CSS/JS,
+no build step, no dependencies.
 
 ## Run locally
 
@@ -26,8 +29,8 @@ Tap **Start** (browsers require a user gesture before audio can play).
 
 ## Notes
 
-- The cat photo's white background is chroma-keyed to transparent in-canvas,
-  so the cat floats in space.
+- The cat is procedural pixel art (see the `HEAD` / `POPTART` sprite grids and
+  the tail/leg drawing code in `app.js`) — no image assets needed.
 - The music is `song.mp3`, looped seamlessly.
 - Everything scales responsively and works on phones (tap to start, 🔊 to mute).
 
@@ -37,6 +40,5 @@ Tap **Start** (browsers require a user gesture before audio can play).
 |------|---------|
 | `index.html` | Page shell + start overlay |
 | `style.css` | Layout & overlay styling |
-| `app.js` | Canvas animation + looping soundtrack |
-| `cat.jpg` | The star of the show |
+| `app.js` | Pixel-art animation + looping soundtrack |
 | `song.mp3` | The soundtrack |
