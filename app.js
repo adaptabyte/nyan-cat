@@ -213,7 +213,11 @@
 
     if (catReady) {
       ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(catSprite, cx - catW / 2, cy - catH / 2, catW, catH);
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(-Math.PI / 4);   // 45° counterclockwise
+      ctx.drawImage(catSprite, -catW / 2, -catH / 2, catW, catH);
+      ctx.restore();
     }
 
     requestAnimationFrame(frame);
