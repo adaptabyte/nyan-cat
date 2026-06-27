@@ -28,8 +28,7 @@ Tap **Start** (browsers require a user gesture before audio can play).
 
 - The cat photo's white background is chroma-keyed to transparent in-canvas,
   so the cat floats in space.
-- The music is an **original** chiptune loop synthesized with the Web Audio
-  API — not the copyrighted Nyan Cat song.
+- The music is `song.mp3`, looped seamlessly.
 - Everything scales responsively and works on phones (tap to start, 🔊 to mute).
 
 ## Files
@@ -38,5 +37,6 @@ Tap **Start** (browsers require a user gesture before audio can play).
 |------|---------|
 | `index.html` | Page shell + start overlay |
 | `style.css` | Layout & overlay styling |
-| `app.js` | Canvas animation + Web Audio chiptune |
+| `app.js` | Canvas animation + looping soundtrack |
 | `cat.jpg` | The star of the show |
+| `song.mp3` | The soundtrack |

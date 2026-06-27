@@ -1,7 +1,7 @@
 /* ===================================================================
    Nyan Cat — custom edition
    Canvas animation: scrolling starfield + waving rainbow + pop-tart
-   body + your cat, all bobbing in space. Original chiptune via WebAudio.
+   body + your cat, all bobbing in space. Looping soundtrack: song.mp3.
    =================================================================== */
 
 (() => {
@@ -84,18 +84,14 @@
   window.addEventListener('resize', seedStars);
 
   // A star is drawn as a small "+" whose arms grow then shrink (6 frames).
-  function drawStar(s, scrollPx) {
+  function drawStar(s) {
     const u = s.size;                 // pixel unit
-    const phase = s.frame;            // 0..5
-    // arm length per frame: small -> big -> small (twinkle)
     const armTable = [0, 1, 2, 2, 1, 0];
-    const arm = armTable[phase];
+    const arm = armTable[s.frame];
     const cx = Math.round(s.x);
     const cy = Math.round(s.y);
     ctx.fillStyle = '#fff';
-    // center block
-    ctx.fillRect(cx - u, cy - u, u * 2, u * 2);
-    // four arms
+    ctx.fillRect(cx - u, cy - u, u * 2, u * 2);   // center
     for (let a = 1; a <= arm; a++) {
       const off = u * 2 * a;
       ctx.fillRect(cx - u, cy - u - off, u * 2, u * 2);   // up
@@ -109,10 +105,9 @@
   // 3. LAYOUT helpers — everything scales off the cat's height
   // ===================================================================
   function layout() {
-    // Cat sized relative to viewport, clamped so it reads well on phones.
     const catH = Math.max(150, Math.min(H * 0.42, 360));
     const catW = catH * catAspect;
-    const cx = W * 0.5;                 // cat center x (rainbow trails left of it)
+    const cx = W * 0.5;
     const cyBase = H * 0.5;
     return { catH, catW, cx, cyBase };
   }
@@ -123,9 +118,8 @@
   const RAINBOW = ['#ff1e1e', '#ff9900', '#ffe600', '#33dd00', '#0099ff', '#6633ff'];
   function drawRainbow(originX, centerY, stripeH, scroll) {
     const totalH = stripeH * RAINBOW.length;
-    const seg = stripeH;                       // width of each wave segment
-    const step = stripeH;                      // vertical wag amount
-    // square-ish wave pattern (in units of `step`)
+    const seg = stripeH;
+    const step = stripeH;
     const pattern = [0, 0, 1, 1];
     const top0 = centerY - totalH / 2;
 
@@ -146,22 +140,18 @@
   // ===================================================================
   function drawPopTart(x, y, w, h) {
     const r = Math.min(w, h) * 0.16;
-    // toasted pastry base
     roundRect(x, y, w, h, r);
     ctx.fillStyle = '#f0c891';
     ctx.fill();
     ctx.strokeStyle = '#caa166';
     ctx.lineWidth = Math.max(2, w * 0.02);
     ctx.stroke();
-    // pink frosting inset
     const m = w * 0.12;
     roundRect(x + m, y + m, w - m * 2, h - m * 2, r * 0.7);
     ctx.fillStyle = '#ff8ec6';
     ctx.fill();
-    // sprinkles
     const colors = ['#ffffff', '#7fffd4', '#fff44f', '#7ec8ff', '#ff5fa2'];
     const sCount = Math.round((w * h) / 1600);
-    // deterministic-ish sprinkle placement
     let seed = 1337;
     const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
     for (let i = 0; i < sCount; i++) {
@@ -196,11 +186,9 @@
     last = now;
     if (running) { t += dt; scroll += dt * 220; }
 
-    // background
     ctx.fillStyle = '#1a1a3a';
     ctx.fillRect(0, 0, W, H);
 
-    // stars
     for (const s of stars) {
       if (running) {
         s.x -= s.speed * dt * 220;
@@ -208,25 +196,21 @@
         if (s.ftime > 0.12) { s.ftime = 0; s.frame = (s.frame + 1) % STAR_FRAMES; }
         if (s.x < -20) { Object.assign(s, makeStar(false)); }
       }
-      drawStar(s, scroll);
+      drawStar(s);
     }
 
     const { catH, catW, cx, cyBase } = layout();
-    // bob: 6-step square bob like the original sprite
     const bobSteps = [0, -1, -2, -1, 0, 1, 2, 1];
     const bobIdx = Math.floor(t * 12) % bobSteps.length;
     const bob = bobSteps[bobIdx] * (catH * 0.025);
     const cy = cyBase + bob;
 
-    // rainbow trails from just behind the pop-tart, leftward
     const stripeH = catH * 0.085;
     drawRainbow(cx - catW * 0.18, cy + catH * 0.06, stripeH, scroll);
 
-    // pop-tart body roughly over the cat's torso
     const ptW = catW * 0.62, ptH = catH * 0.5;
     drawPopTart(cx - ptW * 0.62, cy - ptH * 0.35, ptW, ptH);
 
-    // the cat, on top
     if (catReady) {
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(catSprite, cx - catW / 2, cy - catH / 2, catW, catH);
@@ -237,117 +221,18 @@
   requestAnimationFrame(frame);
 
   // ===================================================================
-  // 7. AUDIO — original looping chiptune (square melody + bass + drums)
-  //    NOTE: this is an original tune, not the copyrighted Nyan Cat song.
+  // 7. AUDIO — loop the supplied soundtrack (song.mp3)
   // ===================================================================
-  let audioCtx = null;
-  let master = null;
-  let musicTimer = null;
   let muted = false;
-
-  // Note frequencies (a small table, A4=440 equal temperament)
-  const NOTE = (() => {
-    const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const map = {};
-    for (let oct = 2; oct <= 6; oct++) {
-      for (let i = 0; i < 12; i++) {
-        const midi = (oct + 1) * 12 + i;
-        map[names[i] + oct] = 440 * Math.pow(2, (midi - 69) / 12);
-      }
-    }
-    map['-'] = 0; // rest
-    return map;
-  })();
-
-  // An upbeat original loop in A minor-ish, 16 steps per bar, 2 bars.
-  const TEMPO = 0.13; // seconds per step (~115 steps -> bright & bouncy)
-  const melody = [
-    'E5','A5','B5','C6','B5','A5','E5','-',
-    'D5','E5','F5','E5','D5','C5','D5','-',
-    'E5','A5','B5','C6','D6','C6','B5','A5',
-    'G5','A5','B5','A5','G5','E5','A5','-',
-  ];
-  const bass = [
-    'A2','-','A3','-','E2','-','E3','-',
-    'F2','-','F3','-','C3','-','G2','-',
-    'A2','-','A3','-','E2','-','E3','-',
-    'F2','-','C3','-','G2','-','A2','-',
-  ];
-
-  function blip(freq, time, dur, type, gain, pan) {
-    if (!freq) return;
-    const osc = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    g.gain.setValueAtTime(0, time);
-    g.gain.linearRampToValueAtTime(gain, time + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
-    let node = g;
-    if (pan !== undefined && audioCtx.createStereoPanner) {
-      const p = audioCtx.createStereoPanner();
-      p.pan.value = pan;
-      g.connect(p); node = p;
-    }
-    osc.connect(g);
-    node.connect(master);
-    osc.start(time);
-    osc.stop(time + dur + 0.02);
-  }
-
-  function hat(time) {
-    const n = audioCtx.createBufferSource();
-    const len = Math.floor(audioCtx.sampleRate * 0.03);
-    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
-    n.buffer = buf;
-    const g = audioCtx.createGain();
-    g.gain.value = 0.06;
-    const hp = audioCtx.createBiquadFilter();
-    hp.type = 'highpass'; hp.frequency.value = 7000;
-    n.connect(hp); hp.connect(g); g.connect(master);
-    n.start(time); n.stop(time + 0.04);
-  }
-
-  function kick(time) {
-    const osc = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    osc.frequency.setValueAtTime(160, time);
-    osc.frequency.exponentialRampToValueAtTime(50, time + 0.12);
-    g.gain.setValueAtTime(0.5, time);
-    g.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
-    osc.connect(g); g.connect(master);
-    osc.start(time); osc.stop(time + 0.2);
-  }
-
-  let step = 0;
-  let nextTime = 0;
-  function scheduler() {
-    if (!audioCtx) return;
-    while (nextTime < audioCtx.currentTime + 0.1) {
-      const i = step % melody.length;
-      blip(NOTE[melody[i]], nextTime, TEMPO * 0.9, 'square', 0.14, 0.15);
-      blip(NOTE[bass[i]], nextTime, TEMPO * 1.6, 'triangle', 0.22, -0.1);
-      if (i % 4 === 0) kick(nextTime);
-      if (i % 2 === 1) hat(nextTime);
-      // sparkle harmony on accents
-      if (i % 8 === 0 && NOTE[melody[i]]) blip(NOTE[melody[i]] * 2, nextTime, TEMPO * 0.5, 'square', 0.05, 0.4);
-      nextTime += TEMPO;
-      step++;
-    }
-  }
+  const music = new Audio('song.mp3');
+  music.loop = true;          // seamless repeat
+  music.preload = 'auto';
+  music.volume = 0.7;
 
   function startAudio() {
-    if (audioCtx) { audioCtx.resume(); return; }
-    const AC = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AC();
-    master = audioCtx.createGain();
-    master.gain.value = muted ? 0 : 0.5;
-    master.connect(audioCtx.destination);
-    nextTime = audioCtx.currentTime + 0.1;
-    step = 0;
-    musicTimer = setInterval(scheduler, 25);
+    music.muted = muted;
+    const p = music.play();
+    if (p && p.catch) p.catch(() => { /* will retry on next user gesture */ });
   }
 
   // ===================================================================
@@ -373,13 +258,17 @@
   muteBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     muted = !muted;
-    if (master) master.gain.value = muted ? 0 : 0.5;
+    music.muted = muted;
+    if (!muted && music.paused && running) startAudio();
     muteBtn.textContent = muted ? '🔇' : '🔊';
   });
 
-  // pause audio scheduling when tab is hidden (saves battery)
+  // pause music when tab is hidden (saves battery), resume when back
   document.addEventListener('visibilitychange', () => {
-    if (!audioCtx) return;
-    if (document.hidden) audioCtx.suspend(); else if (running) audioCtx.resume();
+    if (document.hidden) {
+      music.pause();
+    } else if (running && !muted) {
+      music.play().catch(() => {});
+    }
   });
 })();
